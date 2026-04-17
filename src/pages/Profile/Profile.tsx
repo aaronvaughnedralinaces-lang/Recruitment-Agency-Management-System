@@ -3,7 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import axios from "axios";
 import {
     Pencil, Trash2, Plus, Briefcase, GraduationCap,
-    User, LogOut, X, Save, Mail, Calendar, MapPin, CheckCircle2
+    /*User,*/ LogOut, X, Save, Mail, Calendar, MapPin, CheckCircle2
 } from "lucide-react";
 
 // Types

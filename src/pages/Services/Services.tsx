@@ -1,13 +1,13 @@
-import React from "react";
+//import React from "react";
 
 export default function ServicesPage() {
     const handleGetStarted = () => {
         alert("📋 Thank you for choosing Honor Deployment! Our placement specialists will reach out within 24 hours.");
     };
 
-    const handleLiveChat = () => {
+    /*const handleLiveChat = () => {
         alert("💬 Live chat: Our recruitment consultants are online 24/7.");
-    };
+    };*/
 
     return (
         <div className="min-h-screen bg-slate-50 font-sans text-slate-900 flex flex-col">
