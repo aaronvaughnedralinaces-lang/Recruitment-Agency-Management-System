@@ -39,10 +39,18 @@ app.use('/api', jobRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/location', locationRoutes);   // <-- NOW locationRoutes is defined
 
-// 404 handler
-app.use((req, res) => {
-    res.status(404).json({ message: 'Route not found' });
+const clientBuildPath = path.join(__dirname, 'client/dist'); 
+app.use(express.static(clientBuildPath));
+
+// Catch-all route to hand over routing to React Router
+app.get('*', (req, res) => {
+    res.sendFile(path.join(clientBuildPath, 'index.html'));
 });
+
+// 404 handler
+/*app.use((req, res) => {
+    res.status(404).json({ message: 'Route not found' });
+});*/
 
 app.use(errorHandler);
 
