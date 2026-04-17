@@ -39,7 +39,8 @@ app.use('/api', jobRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/location', locationRoutes);   // <-- NOW locationRoutes is defined
 
-const clientBuildPath = path.join(__dirname, 'client/dist'); 
+// Go up one directory level to find the Vite 'dist' folder
+const clientBuildPath = path.join(__dirname, '../dist'); 
 app.use(express.static(clientBuildPath));
 
 // Catch-all route to hand over routing to React Router
