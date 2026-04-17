@@ -37,7 +37,8 @@ export default function Dashboard() {
     const [selectedJob, setSelectedJob] = useState<Job | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [applying, setApplying] = useState(false);
-    const API_BASE_URL = import.meta.env.VITE_API_URL || "";
+    //const API_BASE_URL = import.meta.env.VITE_API_URL || "";
+    const API_BASE_URL = "https://recruitment-agency-management-system-production.up.railway.app";
 
     useEffect(() => {
         const token = localStorage.getItem("token");
