@@ -107,7 +107,7 @@ export default function EmployerDashboard() {
     };
 
     // ========== API Logic ==========
-    const apiCall = useCallback(async (endpoint: string, options: RequestInit = {}) => {
+   /* const apiCall = useCallback(async (endpoint: string, options: RequestInit = {}) => {
         const token = localStorage.getItem("token");
         const res = await fetch(`${API_URL}${endpoint}`, {
             ...options,
@@ -123,6 +123,47 @@ export default function EmployerDashboard() {
             throw new Error(err.message || "Request failed");
         }
         return res.status === 204 ? null : res.json();
+    }, []);*/
+
+    // ========== API Logic ==========
+    const apiCall = useCallback(async (endpoint: string, options: RequestInit = {}) => {
+        const token = localStorage.getItem("token");
+        const res = await fetch(`${API_URL}${endpoint}`, {
+            ...options,
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+                ...options.headers
+            },
+        });
+
+        // 1. Handle Errors (400, 404, 405, 500, etc.)
+        if (!res.ok) {
+            if (res.status === 404) return null;
+            
+            // Check if the server actually sent JSON before trying to parse it
+            const contentType = res.headers.get("content-type");
+            let errorMessage = `HTTP Error: ${res.status}`;
+
+            if (contentType && contentType.includes("application/json")) {
+                const err = await res.json().catch(() => ({}));
+                errorMessage = err.message || errorMessage;
+            } else {
+                // If it's HTML (like your index.html), ignore it to prevent the crash
+                await res.text().catch(() => ""); 
+            }
+            throw new Error(errorMessage);
+        }
+
+        // 2. Handle Success (200, 201)
+        if (res.status === 204) return null;
+        
+        // Protect the success response too!
+        const contentType = res.headers.get("content-type");
+        if (contentType && contentType.includes("application/json")) {
+            return res.json();
+        }
+        return null;
     }, []);
 
     const fetchData = useCallback(async () => {
