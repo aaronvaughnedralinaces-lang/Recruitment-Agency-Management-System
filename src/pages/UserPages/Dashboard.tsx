@@ -37,6 +37,7 @@ export default function Dashboard() {
     const [selectedJob, setSelectedJob] = useState<Job | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [applying, setApplying] = useState(false);
+    const API_BASE_URL = import.meta.env.VITE_API_URL || "";
 
     useEffect(() => {
         const token = localStorage.getItem("token");
@@ -84,7 +85,7 @@ export default function Dashboard() {
         setLoading(true);
         setError(null);
         try {
-            const response = await fetch('/api/jobs?limit=12&sort=posted_date,desc&status=open', {
+            const response = await fetch(`${API_BASE_URL}/api/jobs?limit=12&sort=posted_date,desc&status=open`, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
@@ -151,7 +152,7 @@ export default function Dashboard() {
         const token = localStorage.getItem("token");
 
         try {
-            const response = await fetch('/api/applications', {
+            const response = await fetch(`${API_BASE_URL}/api/applications`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,
