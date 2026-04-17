@@ -32,10 +32,14 @@ if (!fs.existsSync(uploadDir)) {
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Mount routes
-app.use('/api', authRoutes);
+/*app.use('/api', authRoutes);
 app.use('/api', userRoutes);
 app.use('/api', companyRoutes);
-app.use('/api', jobRoutes);
+app.use('/api', jobRoutes);*/
+app.use('/api/auth', authRoutes); 
+app.use('/api/users', userRoutes); 
+app.use('/api/company', companyRoutes); // <-- Make sure it looks exactly like this
+app.use('/api/jobs', jobRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/location', locationRoutes);   // <-- NOW locationRoutes is defined
 

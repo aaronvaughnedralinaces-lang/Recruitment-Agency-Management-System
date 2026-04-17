@@ -25,7 +25,7 @@ module.exports = router;*/
 
 const express = require('express');
 const { authenticateToken } = require('../middleware/auth');
-const logoUpload = require('../middleware/logoUpload'); // multer for logo images
+const logoUpload = require('../middleware/logoUpload'); 
 const {
     getCompany,
     createCompany,
@@ -37,14 +37,13 @@ const {
 const router = express.Router();
 
 // Company profile routes
-// Since this router is already mounted at '/api/company' in server.js, 
-// we just use '/' to represent the root of this specific route.
+// Using '/' here combines with '/api/company' from apps.js to make '/api/company'
 router.get('/', authenticateToken, getCompany);
 router.post('/', authenticateToken, logoUpload.single('logo'), createCompany);
 router.put('/', authenticateToken, logoUpload.single('logo'), updateCompany);
 
 // Document routes
-// We just use '/documents' here, which combines to become '/api/company/documents'
+// Using '/documents' here combines to make '/api/company/documents'
 router.post('/documents', authenticateToken, uploadDocument);
 router.get('/documents', authenticateToken, getDocuments);
 
