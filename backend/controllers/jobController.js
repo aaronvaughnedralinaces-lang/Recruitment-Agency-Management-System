@@ -18,20 +18,20 @@ exports.getJobs = async (req, res) => {
         // Parse sort parameter (e.g., "posted_date,desc")
         let [sortField, sortOrder] = sort.split(',');
         sortOrder = sortOrder ? sortOrder.toUpperCase() : 'DESC';
-        const allowedFields = ['posted_date', 'title', 'salary_range'];
+        const allowedFields = ['posted_date', 'title', 'salary_range', 'id'];
         if (!allowedFields.includes(sortField)) sortField = 'posted_date';
         if (!['ASC', 'DESC'].includes(sortOrder)) sortOrder = 'DESC';
         
         const jobs = await Job.getAllOpen({
-            limit: parseInt(limit),
+            limit: Math.min(parseInt(limit) || 12, 100),
             sortField,
             sortOrder,
             status
         });
         res.json(jobs);
     } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: 'Server error' });
+        console.error('getJobs error:', err.message, err.code, err.sql);
+        res.status(500).json({ message: 'Server error', error: process.env.NODE_ENV === 'development' ? err.message : undefined });
     }
 };
 

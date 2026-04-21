@@ -42,9 +42,11 @@ const Job = {
             return rows.map(row => row.name);
         } catch (err) {
             // Keep jobs API working even if tags tables are not present in a target DB.
-            if (err && (err.code === 'ER_NO_SUCH_TABLE' || err.code === 'ER_BAD_FIELD_ERROR')) {
+            if (err && (err.code === 'ER_NO_SUCH_TABLE' || err.code === 'ER_BAD_FIELD_ERROR' || err.message.includes('Unknown'))) {
+                console.warn(`Tags unavailable for job ${jobId}:`, err.message);
                 return [];
             }
+            console.error(`Tag query failed for job ${jobId}:`, err.message);
             throw err;
         }
     },
@@ -109,22 +111,27 @@ const Job = {
     },
     // models/Job.js – add this function inside the Job object
         getAllOpen: async ({ limit, sortField, sortOrder, status }) => {
-        const query = `
-            SELECT j.*, 
-                c.name AS company_name, 
-                c.logo AS company_logo   -- ✅ changed from 'logo_url' to 'logo'
-            FROM jobs j
-            LEFT JOIN companies c ON j.company_id = c.id
-            WHERE j.status = ? 
-            ORDER BY j.${sortField} ${sortOrder}
-            LIMIT ?
-        `;
-        const [rows] = await db.query(query, [status, limit]);
-        
-        for (const job of rows) {
-            job.tags = await Job.getTagsForJob(job.id);
+        try {
+            const query = `
+                SELECT j.*, 
+                    c.name AS company_name, 
+                    c.logo AS company_logo
+                FROM jobs j
+                LEFT JOIN companies c ON j.company_id = c.id
+                WHERE j.status = ? 
+                ORDER BY j.${sortField} ${sortOrder}
+                LIMIT ?
+            `;
+            const [rows] = await db.query(query, [status, limit]);
+            
+            for (const job of rows) {
+                job.tags = await Job.getTagsForJob(job.id);
+            }
+            return rows;
+        } catch (err) {
+            console.error('getAllOpen error:', err.message, 'SQL:', err.sql);
+            throw err;
         }
-        return rows;
     },
     getAll: async () => {
         const [rows] = await db.query(`
