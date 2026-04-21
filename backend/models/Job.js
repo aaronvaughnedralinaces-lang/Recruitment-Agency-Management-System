@@ -32,13 +32,21 @@ const Job = {
     },
 
     getTagsForJob: async (jobId) => {
-        const [rows] = await db.query(
-            `SELECT t.name FROM job_tags jt
-             INNER JOIN tags t ON jt.tag_id = t.id
-             WHERE jt.job_id = ?`,
-            [jobId]
-        );
-        return rows.map(row => row.name);
+        try {
+            const [rows] = await db.query(
+                `SELECT t.name FROM job_tags jt
+                 INNER JOIN tags t ON jt.tag_id = t.id
+                 WHERE jt.job_id = ?`,
+                [jobId]
+            );
+            return rows.map(row => row.name);
+        } catch (err) {
+            // Keep jobs API working even if tags tables are not present in a target DB.
+            if (err && (err.code === 'ER_NO_SUCH_TABLE' || err.code === 'ER_BAD_FIELD_ERROR')) {
+                return [];
+            }
+            throw err;
+        }
     },
 
     // ========== CRUD Methods ==========
@@ -108,8 +116,7 @@ const Job = {
             FROM jobs j
             LEFT JOIN companies c ON j.company_id = c.id
             WHERE j.status = ? 
-            AND (j.closing_date IS NULL OR j.closing_date >= CURDATE())
-            ORDER BY ${sortField} ${sortOrder}
+            ORDER BY j.${sortField} ${sortOrder}
             LIMIT ?
         `;
         const [rows] = await db.query(query, [status, limit]);
