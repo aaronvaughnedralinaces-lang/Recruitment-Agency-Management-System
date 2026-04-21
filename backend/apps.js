@@ -43,6 +43,10 @@ app.use('/api/jobs', jobRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/location', locationRoutes);   // <-- NOW locationRoutes is defined
 
+app.use('/api', (req, res) => {
+    res.status(404).json({ message: 'API route not found' });
+});
+
 // Go up one directory level to find the Vite 'dist' folder
 const clientBuildPath = path.join(__dirname, '../dist'); 
 app.use(express.static(clientBuildPath));
