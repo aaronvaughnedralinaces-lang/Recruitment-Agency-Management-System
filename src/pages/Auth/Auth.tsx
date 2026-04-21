@@ -26,7 +26,7 @@ export default function AuthPage() {
 
         if (activeTab === "login") {
             try {
-                const res = await api.post("/login", { email, password });
+                const res = await api.post("/auth/login", { email, password });
                 localStorage.setItem("token", res.data.token);
                 localStorage.setItem("user", JSON.stringify(res.data.user));
                 const userRole = res.data.user.role;
@@ -46,7 +46,7 @@ export default function AuthPage() {
                 return;
             }
             try {
-                await api.post("/register", { name, email, password, role });
+                await api.post("/auth/register", { name, email, password, role });
                 setSuccessMessage("Your profile has been created! Please sign in to continue.");
                 setActiveTab("login");
                 setName("");
