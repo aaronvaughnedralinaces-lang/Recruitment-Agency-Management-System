@@ -30,8 +30,15 @@ exports.getJobs = async (req, res) => {
         });
         res.json(jobs);
     } catch (err) {
-        console.error('getJobs error:', err.message, err.code, err.sql);
-        res.status(500).json({ message: 'Server error', error: process.env.NODE_ENV === 'development' ? err.message : undefined });
+        const errorCode = err.code || err.errno || 'UNKNOWN';
+        const isConnError = ['ECONNREFUSED', 'ENOTFOUND', 'EHOSTUNREACH', 'ETIMEDOUT'].includes(errorCode);
+        const statusCode = isConnError ? 503 : 500;
+        
+        console.error('getJobs error:', { code: errorCode, message: err.message });
+        res.status(statusCode).json({ 
+            message: isConnError ? 'Database connection error' : 'Server error',
+            error: process.env.NODE_ENV === 'development' ? err.message : undefined 
+        });
     }
 };
 

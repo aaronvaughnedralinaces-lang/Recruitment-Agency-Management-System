@@ -31,6 +31,17 @@ if (!fs.existsSync(uploadDir)) {
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
+// Health check endpoint (no auth required)
+app.get('/api/health', async (req, res) => {
+    try {
+        const db = require('./config/database');
+        await db.query('SELECT 1');
+        res.json({ status: 'ok', message: 'Database connected' });
+    } catch (err) {
+        res.status(503).json({ status: 'error', message: 'Database connection failed: ' + err.message });
+    }
+});
+
 // Mount routes
 /*app.use('/api', authRoutes);
 app.use('/api', userRoutes);
