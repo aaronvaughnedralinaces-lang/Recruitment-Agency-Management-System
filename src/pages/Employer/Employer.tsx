@@ -37,7 +37,13 @@ interface City {
     name: string;
 }
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+let API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+if (API_URL.endsWith('/api')) {
+    API_URL = API_URL.replace('/api', '');
+}
+if (API_URL.endsWith('/')) {
+    API_URL = API_URL.slice(0, -1);
+}
 
 // ==================== Helper Functions ====================
 const formatDate = (dateString: string) => {
