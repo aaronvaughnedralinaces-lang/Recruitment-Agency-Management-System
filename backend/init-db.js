@@ -157,19 +157,21 @@ async function initializeDatabase() {
         `);
         console.log('✓ Created career table');
 
-        // Create documents table
+        // Create company_documents table
         await connection.execute(`
-            CREATE TABLE IF NOT EXISTS documents (
+            CREATE TABLE IF NOT EXISTS company_documents (
                 id INT AUTO_INCREMENT PRIMARY KEY,
                 user_id INT NOT NULL,
                 company_id INT,
-                document_name VARCHAR(255),
-                document_path VARCHAR(255),
-                document_type VARCHAR(50),
-                uploaded_date DATETIME DEFAULT CURRENT_TIMESTAMP
+                doc_type VARCHAR(50),
+                file_path VARCHAR(255),
+                status ENUM('pending', 'valid', 'expired', 'rejected') DEFAULT 'pending',
+                uploaded_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                UNIQUE KEY unique_user_doc (user_id, doc_type)
             )
         `);
-        console.log('✓ Created documents table');
+        console.log('✓ Created company_documents table');
 
         console.log('\n✅ Database initialization complete!');
         console.log('All tables have been created successfully.\n');
