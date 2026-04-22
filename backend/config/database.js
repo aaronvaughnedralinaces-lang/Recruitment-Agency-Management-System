@@ -1,5 +1,9 @@
 const mysql = require('mysql2');
-require('dotenv').config();
+
+// Only load .env in development - allow Railway env vars to take precedence in production
+if (process.env.NODE_ENV !== 'production') {
+    require('dotenv').config();
+}
 
 const dbConfig = {
     host: process.env.DB_HOST || 'localhost',
