@@ -37,8 +37,14 @@ export default function Dashboard() {
     const [selectedJob, setSelectedJob] = useState<Job | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [applying, setApplying] = useState(false);
-    //const API_BASE_URL = import.meta.env.VITE_API_URL || "";
-    const API_BASE_URL = "https://recruitment-agency-management-system-production.up.railway.app";
+    // Secure dynamic API base URL
+    let API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+    if (API_BASE_URL.endsWith('/api')) {
+        API_BASE_URL = API_BASE_URL.replace('/api', '');
+    }
+    if (API_BASE_URL.endsWith('/')) {
+        API_BASE_URL = API_BASE_URL.slice(0, -1);
+    }
 
     useEffect(() => {
         const token = localStorage.getItem("token");

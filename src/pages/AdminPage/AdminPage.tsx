@@ -55,6 +55,14 @@ interface ActivityLog {
 }
 
 // ==================== Main Component ====================
+let API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+if (API_BASE_URL.endsWith('/api')) {
+    API_BASE_URL = API_BASE_URL.replace('/api', '');
+}
+if (API_BASE_URL.endsWith('/')) {
+    API_BASE_URL = API_BASE_URL.slice(0, -1);
+}
+
 export default function AdminDashboard() {
     const navigate = useNavigate();
 
@@ -99,7 +107,7 @@ export default function AdminDashboard() {
         setLoadingCompanies(true);
         setErrorCompanies("");
         try {
-            const response = await fetch("http://localhost:5000/api/admin/companies", {
+            const response = await fetch(`${API_BASE_URL}/api/admin/companies`, {
                 headers: getAuthHeader(),
             });
             if (!response.ok) throw new Error("Failed to fetch companies");
@@ -116,7 +124,7 @@ export default function AdminDashboard() {
         setLoadingUsers(true);
         setErrorUsers("");
         try {
-            const response = await fetch("http://localhost:5000/api/admin/users", {
+            const response = await fetch(`${API_BASE_URL}/api/admin/users`, {
                 headers: getAuthHeader(),
             });
             if (!response.ok) throw new Error("Failed to fetch users");
@@ -133,7 +141,7 @@ export default function AdminDashboard() {
         setLoadingJobs(true);
         setErrorJobs("");
         try {
-            const response = await fetch("http://localhost:5000/api/admin/jobs", {
+            const response = await fetch(`${API_BASE_URL}/api/admin/jobs`, {
                 headers: getAuthHeader(),
             });
             if (!response.ok) throw new Error("Failed to fetch jobs");
@@ -150,7 +158,7 @@ export default function AdminDashboard() {
         setLoadingLogs(true);
         setErrorLogs("");
         try {
-            const response = await fetch("http://localhost:5000/api/admin/activity-logs", {
+            const response = await fetch(`${API_BASE_URL}/api/admin/activity-logs`, {
                 headers: getAuthHeader(),
             });
             if (!response.ok) throw new Error("Failed to fetch activity logs");
@@ -201,7 +209,7 @@ export default function AdminDashboard() {
     const fetchCompanyDocuments = async (companyId: number) => {
         setLoadingDocs(true);
         try {
-            const response = await fetch(`http://localhost:5000/api/admin/companies/${companyId}/documents`, {
+            const response = await fetch(`${API_BASE_URL}/api/admin/companies/${companyId}/documents`, {
                 headers: getAuthHeader(),
             });
             if (!response.ok) throw new Error('Failed to fetch documents');
@@ -218,7 +226,7 @@ export default function AdminDashboard() {
         if (!window.confirm(`Set document status to ${newStatus}?`)) return;
         setUpdatingDocId(docId);
         try {
-            const response = await fetch(`http://localhost:5000/api/admin/documents/${docId}`, {
+            const response = await fetch(`${API_BASE_URL}/api/admin/documents/${docId}`, {
                 method: 'PUT',
                 headers: getAuthHeader(),
                 body: JSON.stringify({ status: newStatus }),
@@ -244,7 +252,7 @@ export default function AdminDashboard() {
 
         setTogglingCompanyId(companyId);
         try {
-            const response = await fetch(`http://localhost:5000/api/admin/companies/${companyId}`, {
+            const response = await fetch(`${API_BASE_URL}/api/admin/companies/${companyId}`, {
                 method: "PUT",
                 headers: getAuthHeader(),
                 body: JSON.stringify({ verified_status: newStatus }),
