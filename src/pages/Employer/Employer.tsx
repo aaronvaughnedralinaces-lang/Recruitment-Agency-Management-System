@@ -128,7 +128,17 @@ export default function EmployerDashboard() {
     // ========== API Logic ==========
     const apiCall = useCallback(async (endpoint: string, options: RequestInit = {}) => {
         const token = localStorage.getItem("token");
-        const res = await fetch(`${API_URL}${endpoint}`, {
+        // Remove trailing slash from API_URL and leading slash from endpoint to avoid //
+        const baseUrl = API_URL.endsWith('/') ? API_URL.slice(0, -1) : API_URL;
+        const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+        
+        // Fix for double /api/api
+        let finalUrl = `${baseUrl}${cleanEndpoint}`;
+        if (finalUrl.includes('/api/api')) {
+            finalUrl = finalUrl.replace('/api/api', '/api');
+        }
+        
+        const res = await fetch(finalUrl, {
             ...options,
             headers: {
                 "Content-Type": "application/json",
