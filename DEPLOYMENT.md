@@ -1,6 +1,78 @@
-# Deployment Guide - Railway
+# Deployment & Setup Guide
 
-## Critical Issue: Database Configuration Required
+## Overview
+
+This is a full-stack MERN app split into:
+- **Frontend**: Vite + React + TypeScript (port 5173 dev, `dist/` in production)
+- **Backend**: Express.js + MySQL (port 5000)
+
+The app has been configured with environment-aware API routing so it works seamlessly in local development and on Railway production.
+
+## Local Development Setup
+
+### 1. Install Dependencies
+
+```bash
+# Install frontend dependencies (in project root)
+npm install
+
+# Install backend dependencies
+npm install --prefix backend
+```
+
+### 2. Configure Local Environment
+
+Create a `.env.local` file in the project root (already exists):
+```
+VITE_API_URL=http://localhost:5000/api
+```
+
+This tells your local Vite dev server where to find the backend API.
+
+### 3. Set Backend Database Configuration
+
+Edit `backend/.env` with your local MySQL credentials:
+```
+DB_HOST=localhost
+DB_USER=root
+DB_PASSWORD=
+DB_NAME=rams_db
+JWT_SECRET=local_development_secret_key
+PORT=5000
+NODE_ENV=development
+```
+
+Make sure MySQL is running and the `rams_db` database exists.
+
+### 4. Run Locally
+
+In two separate terminals:
+
+**Terminal 1 - Frontend (Vite dev server on port 5173):**
+```bash
+npm run dev
+```
+
+**Terminal 2 - Backend (Express on port 5000):**
+```bash
+npm run dev --prefix backend
+```
+
+Then open: http://localhost:5173
+
+The frontend will automatically proxy `/api` calls to `http://localhost:5000/api` via Vite's dev server proxy.
+
+### 5. Test the Setup
+
+- Visit http://localhost:5173
+- Try the login/register flow
+- Check browser DevTools Network tab - API calls should go to localhost:5000
+
+---
+
+## Production Deployment (Railway)
+
+### Critical Issue: Database Configuration Required
 
 The app is currently failing because **Railway environment variables are not configured**.
 
@@ -13,38 +85,59 @@ This means the backend cannot connect to any database.
 
 ---
 
-## Quick Fix: Configure Railway Environment Variables
+## Production Deployment (Railway)
 
-### 1. Get Your Database Credentials
-You need:
-- **DB_HOST** - MySQL server hostname (e.g., `mysql-prod.railway.app`)
-- **DB_USER** - MySQL username (usually `root`)
-- **DB_PASSWORD** - MySQL password
-- **JWT_SECRET** - Any random secret string for token signing
+### Step 1: Connect Your GitHub Repository to Railway
 
-### 2. Set Variables on Railway Dashboard
+1. Go to [Railway.app](https://railway.app)
+2. Create a new project or select your existing "Recruitment-Agency-Management-System" project
+3. Connect your GitHub repository
+4. Railway will auto-detect the Node.js project and create a service
 
-1. Go to [Railway Dashboard](https://railway.app)
-2. Select your **Recruitment Agency Management System** project
-3. Click **Settings** (gear icon)
-4. Find **Variables** section
-5. Add these key-value pairs:
+### Step 2: Configure Backend Environment Variables on Railway
 
-| Variable | Example Value | Notes |
-|----------|---------------|-------|
-| `DB_HOST` | `mysql.railway.internal` | Or your actual MySQL host |
+The **frontend** is built and served statically, so it bakes in the API URL at build time. The backend needs runtime environment variables.
+
+1. Go to Railway Dashboard → Your Project → Settings
+2. Click **Variables** tab
+3. Add these environment variables:
+
+| Variable | Value | Notes |
+|----------|-------|-------|
+| `DB_HOST` | `mysql-prod.railway.internal` or your MySQL hostname | Check Railway MySQL service for this value |
 | `DB_USER` | `root` | Your MySQL username |
-| `DB_PASSWORD` | `your_secure_password` | Your MySQL password |
-| `JWT_SECRET` | `super_secret_key_12345` | Make this random and secure |
+| `DB_PASSWORD` | Your secure MySQL password | Use a strong password |
+| `DB_NAME` | `rams_db` | Database name |
+| `JWT_SECRET` | Any random secret string (e.g., `super_secret_key_12345`) | Generate a secure random string |
 | `NODE_ENV` | `production` | Optional, helps with error messages |
+| `PORT` | `5000` | Internal port (Railway handles external routing) |
 
-### 3. Redeploy
+### Step 3: Build & Deploy
 
-After adding variables:
-1. Railway will auto-redeploy, OR
-2. Manually trigger: Go to Deployments → Click "Deploy" button
+1. Railway will automatically build and deploy when you push to main
+2. Or manually trigger: Dashboard → Deployments → Deploy button
+3. Wait for build to complete (watch the Logs tab)
 
-### 4. Verify
+### Step 4: Configure Frontend API URL for Production
+
+When you deploy to Railway, your frontend needs to know the backend URL.
+
+**Update `.env.production`** (create if it doesn't exist):
+```
+VITE_API_URL=https://your-app.up.railway.app/api
+```
+
+Replace `your-app` with your actual Railway app URL.
+
+Then rebuild and redeploy:
+```bash
+npm run build
+git add .
+git commit -m "Set production API URL"
+git push
+```
+
+### Step 5: Verify the Deployment
 
 Test the health endpoint:
 ```
@@ -59,51 +152,52 @@ GET https://your-app.up.railway.app/api/health
 }
 ```
 
-**If still failing:**
-Check Railway logs → Deployments → Logs tab for exact error message.
+If you see database connection errors, check:
+1. Railway Dashboard → Logs (find the exact error)
+2. Verify DB_HOST, DB_USER, DB_PASSWORD are correct
+3. Ensure MySQL service is running on Railway
 
 ---
 
-## Common Issues
+## How It All Works Together
 
-### Issue: "Database connection error"
-- ✓ Verify DB_HOST, DB_USER, DB_PASSWORD are correct
-- ✓ Ensure MySQL is running on Railway
-- ✓ Check database exists (`rams_db`)
+### Local Development Flow
+1. Run `npm run dev` → Vite dev server on port 5173
+2. Run `npm run dev --prefix backend` → Express API on port 5000
+3. Frontend loads VITE_API_URL from `.env.local` → `http://localhost:5000/api`
+4. Vite dev server proxy forwards `/api` → backend on port 5000
 
-### Issue: "Unknown database 'rams_db'"
-- ✓ Create the database on your MySQL instance
-- ✓ Or change `DB_NAME` variable to match your actual database name
-
-### Issue: Database tables don't exist
-- ✓ Run migration scripts on your MySQL database
-- ✓ Import initial schema if you have a backup
-
----
-
-## Local Development
-
-For local testing, your `.env` file should have:
-```
-DB_HOST=localhost
-DB_USER=root
-DB_PASSWORD=
-DB_NAME=rams_db
-JWT_SECRET=local_dev_secret
-PORT=5000
-```
-
-Run locally:
-```bash
-npm install --prefix backend
-npm run dev --prefix backend
-```
+### Production Flow
+1. Build frontend: `npm run build` → Creates `dist/` folder with production-ready SPA
+2. Backend serves the SPA statically from `/dist`
+3. Frontend has VITE_API_URL baked in at build time → production Railway backend URL
+4. All requests to `/api` go to your Railway backend (same domain as frontend)
 
 ---
 
 ## Troubleshooting
 
-### View Recent Logs
+### Issue: Login returns 500 Internal Server Error
+- ✅ Check backend is running: `curl http://localhost:5000/api/health`
+- ✅ Verify MySQL is running locally
+- ✅ Check backend `.env` has correct DB credentials
+- ✅ In production, check Railway Logs tab for exact error
+
+### Issue: API calls fail with 404 or CORS errors
+- ✅ Verify VITE_API_URL in frontend `.env`
+- ✅ Verify backend is responding at that URL
+- ✅ Check browser DevTools Network tab for actual request URL
+
+### Issue: Database connection error
+- ✅ Verify DB_HOST, DB_USER, DB_PASSWORD are correct
+- ✅ Ensure MySQL is running and accessible
+- ✅ In production (Railway), ensure MySQL service is linked to your app
+
+### Issue: Database tables don't exist
+- ✅ Run migration scripts on your MySQL database
+- ✅ Import initial schema if you have a backup
+
+### View Production Logs
 1. Railway Dashboard → Deployments
 2. Click the latest deployment
 3. Click "Logs" tab
@@ -111,22 +205,8 @@ npm run dev --prefix backend
 
 ### Test Database Connection
 ```bash
+# Local
+curl http://localhost:5000/api/health
+
+# Production (Railway)
 curl https://your-app.up.railway.app/api/health
-```
-
-### Check Current Environment
-The server logs will show:
-```
-[DB Config] { host: 'xxx', user: 'xxx', database: 'xxx', port: 3306, hasPassword: true }
-```
-
-If `host` shows `localhost`, the variables aren't set on Railway.
-
----
-
-## Next Steps
-
-1. **Set Railway environment variables** (see step 2 above)
-2. **Redeploy** (auto or manual)
-3. **Test** the `/api/health` endpoint
-4. **Verify** `/api/jobs` now returns job listings instead of 500 error
