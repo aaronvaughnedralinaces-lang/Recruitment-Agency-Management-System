@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "npm install --prefix backend && vite build",
+    "build": "vite build",
     "start": "npm start --prefix backend",
     "lint": "eslint .",
     "preview": "vite preview"
