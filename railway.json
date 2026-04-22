@@ -1,5 +1,6 @@
 {
   "build": {
     "builder": "nixpacks"
-  }
+  },
+  "start": "npm run preview"
 }
