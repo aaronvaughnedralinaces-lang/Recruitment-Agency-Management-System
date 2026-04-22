@@ -1,5 +1,9 @@
 const mysql = require('mysql2/promise');
-require('dotenv').config();
+
+// Only load .env if not in production (allow Railway env vars to take precedence)
+if (process.env.NODE_ENV !== 'production') {
+    require('dotenv').config();
+}
 
 /**
  * Database Initialization Script
@@ -8,7 +12,7 @@ require('dotenv').config();
  * Usage:
  *   npm run init-db
  * 
- * Make sure DB_HOST, DB_USER, DB_PASSWORD, DB_NAME are set in .env
+ * Make sure DB_HOST, DB_USER, DB_PASSWORD, DB_NAME are set in .env or Railway variables
  */
 
 async function initializeDatabase() {
