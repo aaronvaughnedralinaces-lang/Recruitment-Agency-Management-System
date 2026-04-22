@@ -1,4 +1,5 @@
 const mysql = require('mysql2/promise');
+const { URL } = require('url');
 
 // Only load .env if not in production (allow Railway env vars to take precedence)
 if (process.env.NODE_ENV !== 'production') {
@@ -12,16 +13,33 @@ if (process.env.NODE_ENV !== 'production') {
  * Usage:
  *   npm run init-db
  * 
- * Make sure DB_HOST, DB_USER, DB_PASSWORD, DB_NAME are set in .env or Railway variables
+ * Make sure MYSQL_URL is set, or DB_HOST, DB_USER, DB_PASSWORD, DB_NAME in .env or Railway variables
  */
 
 async function initializeDatabase() {
-    const connection = await mysql.createConnection({
-        host: process.env.DB_HOST,
-        user: process.env.DB_USER,
-        password: process.env.DB_PASSWORD,
-        database: process.env.DB_NAME,
-    });
+    let connectionConfig;
+    
+    // In production, use the MYSQL_URL connection string from Railway
+    if (process.env.MYSQL_URL) {
+        const dbUrl = new URL(process.env.MYSQL_URL);
+        connectionConfig = {
+            host: dbUrl.hostname,
+            user: dbUrl.username,
+            password: dbUrl.password,
+            database: dbUrl.pathname.slice(1), // Remove leading slash
+            port: dbUrl.port || 3306,
+        };
+    } else {
+        // Development: use individual environment variables
+        connectionConfig = {
+            host: process.env.DB_HOST,
+            user: process.env.DB_USER,
+            password: process.env.DB_PASSWORD,
+            database: process.env.DB_NAME,
+        };
+    }
+
+    const connection = await mysql.createConnection(connectionConfig);
 
     try {
         console.log('🔄 Starting database initialization...\n');
