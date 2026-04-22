@@ -34,10 +34,15 @@ exports.getJobs = async (req, res) => {
         const isConnError = ['ECONNREFUSED', 'ENOTFOUND', 'EHOSTUNREACH', 'ETIMEDOUT'].includes(errorCode);
         const statusCode = isConnError ? 503 : 500;
         
-        console.error('getJobs error:', { code: errorCode, message: err.message });
+        let errorMsg = err.message;
+        if (errorCode === 'ECONNREFUSED') {
+            errorMsg = 'Database host refused connection. Check DB_HOST, DB_USER, DB_PASSWORD environment variables.';
+        }
+        
+        console.error('getJobs error:', { code: errorCode, message: err.message, statusCode });
         res.status(statusCode).json({ 
             message: isConnError ? 'Database connection error' : 'Server error',
-            error: process.env.NODE_ENV === 'development' ? err.message : undefined 
+            details: process.env.NODE_ENV === 'development' ? errorMsg : undefined 
         });
     }
 };
