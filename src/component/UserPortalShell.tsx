@@ -1,6 +1,19 @@
 import type { ReactNode } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { BriefcaseBusiness, Building2, LayoutDashboard, LogOut, Menu, UserCircle2, X } from "lucide-react";
+import { 
+  BriefcaseBusiness, 
+  Building2, 
+  LayoutDashboard, 
+  LogOut, 
+  Menu, 
+  UserCircle2, 
+  X,
+  Calendar,
+  Bell,
+  BarChart3,
+  Search,
+  FileText
+} from "lucide-react";
 
 interface UserPortalShellProps {
   children: ReactNode;
@@ -14,10 +27,22 @@ interface UserPortalShellProps {
   }>;
 }
 
-const navItems = [
+interface NavItem {
+  label: string;
+  to: string;
+  icon: any;
+  roles?: string[];
+}
+
+const allNavItems: NavItem[] = [
   { label: "Dashboard", to: "/dashboard", icon: LayoutDashboard },
   { label: "Applications", to: "/my-applications", icon: BriefcaseBusiness },
   { label: "Companies", to: "/companies", icon: Building2 },
+  { label: "Interviews", to: "/interviews", icon: Calendar, roles: ["employer", "jobseeker", "deployment_officer", "admin"] },
+  { label: "Notifications", to: "/notifications", icon: Bell, roles: ["employer", "jobseeker", "deployment_officer", "admin"] },
+  { label: "Analytics", to: "/analytics", icon: BarChart3, roles: ["admin", "employer"] },
+  { label: "Screening", to: "/screening", icon: Search, roles: ["admin", "employer"] },
+  { label: "Reports", to: "/reports", icon: FileText, roles: ["admin", "employer"] },
   { label: "Profile", to: "/profile", icon: UserCircle2 },
 ];
 
@@ -33,6 +58,17 @@ export default function UserPortalShell({
 }: UserPortalShellProps) {
   const location = useLocation();
   const navigate = useNavigate();
+
+  // Get user role for filtering nav items
+  const userStr = localStorage.getItem("user");
+  const user = userStr ? JSON.parse(userStr) : null;
+  const userRole = user?.role || "jobseeker";
+
+  // Filter nav items based on user role
+  const navItems = allNavItems.filter(item => {
+    if (!item.roles) return true; // Show items without role restrictions
+    return item.roles.includes(userRole);
+  });
 
   const handleLogout = () => {
     localStorage.removeItem("token");
