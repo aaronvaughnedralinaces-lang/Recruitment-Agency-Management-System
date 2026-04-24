@@ -6,15 +6,21 @@ exports.getProfile = async (req, res) => {
     try {
         const userId = req.user.id;
         const user = await User.findById(userId);
-        if (!user) return res.status(404).json({ message: 'User not found' });
+        
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
 
-        const career = await Career.findByUserId(userId);
-        const education = await Education.findByUserId(userId);
+        // Fetch data and ensure they default to an empty array if null/undefined
+        const career = await Career.findByUserId(userId) || [];
+        const education = await Education.findByUserId(userId) || [];
 
         res.json({
             user: {
                 id: user.id,
-                name: `${user.first_name} ${user.last_name}`.trim(),
+                // CHANGED: Send these separately to match your DB and new Frontend Interface
+                first_name: user.first_name,
+                last_name: user.last_name,
                 email: user.email,
                 bio: user.bio || ''
             },
@@ -22,8 +28,8 @@ exports.getProfile = async (req, res) => {
             education
         });
     } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: 'Server error' });
+        console.error("Backend Error in getProfile:", err);
+        res.status(500).json({ message: 'Server error', error: err.message });
     }
 };
 
