@@ -26,9 +26,11 @@ interface EducationEntry {
 
 interface UserProfile {
     id: number;
-    name: string;
+    first_name?: string | null;
+    last_name?: string | null;
+    name?: string; // fallback if backend provides a combined name
     email: string;
-    bio: string;
+    bio?: string | null;
 }
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
@@ -44,8 +46,23 @@ const formatDate = (dateStr: string) => {
 };
 
 // Helper to get initials for avatar
-const getInitials = (name: string) => {
-    return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+const getInitials = (displayName: string) => {
+    if (!displayName) return "US";
+    return displayName
+        .split(' ')
+        .map((n) => (n ? n[0] : ''))
+        .join('')
+        .substring(0, 2)
+        .toUpperCase();
+};
+
+const getDisplayName = (user: UserProfile | null) => {
+    if (!user) return 'User';
+    if (user.name && user.name.trim()) return user.name;
+    const first = user.first_name || '';
+    const last = user.last_name || '';
+    const combined = `${first} ${last}`.trim();
+    return combined || 'User';
 };
 
 export default function Profile() {
@@ -81,7 +98,7 @@ export default function Profile() {
 
     const fetchProfile = async () => {
         try {
-            const res = await axios.get(`${API_URL}/users/profile`, getAuthHeaders());
+            const res = await axios.get(`${API_URL}/api/users/profile`, getAuthHeaders());
             setUser(res.data.user);
             setCareer(res.data.career);
             setEducation(res.data.education);
@@ -94,7 +111,7 @@ export default function Profile() {
 
     const updateBio = async () => {
         try {
-            await axios.put(`${API_URL}/api/profile/bio`, { bio: bioDraft }, getAuthHeaders());
+            await axios.put(`${API_URL}/api/users/profile/bio`, { bio: bioDraft }, getAuthHeaders());
             if (user) setUser({ ...user, bio: bioDraft });
             setEditingBio(false);
         } catch (err) {
@@ -251,11 +268,11 @@ export default function Profile() {
 
                     <div className="flex flex-col sm:flex-row gap-8 items-start sm:items-center">
                         <div className="w-28 h-28 rounded-full bg-gradient-to-tr from-violet-600 to-indigo-500 flex items-center justify-center text-white text-4xl font-bold shadow-lg shadow-violet-200 shrink-0 ring-4 ring-white">
-                            {getInitials(user.name || "User")}
+                            {getInitials(getDisplayName(user))}
                         </div>
                         <div className="flex-1 space-y-4">
                             <div>
-                                <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">{user.name}</h1>
+                                <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">{getDisplayName(user)}</h1>
                                 <div className="flex items-center gap-2 text-slate-500 mt-1">
                                     <Mail size={16} className="text-violet-500" />
                                     <span>{user.email}</span>
