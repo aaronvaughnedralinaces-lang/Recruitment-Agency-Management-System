@@ -3,7 +3,8 @@ const db = require('../config/database');
 const Education = {
     findByUserId: async (userId) => {
         const [rows] = await db.query(
-            'SELECT * FROM education WHERE user_id = ? ORDER BY completion_date DESC',
+            //'SELECT * FROM education WHERE user_id = ? ORDER BY completion_date DESC',
+            'SELECT * FROM education WHERE user_id = ?',
             [userId]
         );
         return rows;
