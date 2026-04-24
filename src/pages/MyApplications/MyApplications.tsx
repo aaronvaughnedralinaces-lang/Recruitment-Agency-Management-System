@@ -251,7 +251,7 @@ export default function MyApplications() {
       setError(null);
 
       const response = await axios.get<ApiApplicationsResponse>(
-        `${API_URL}/api/applications/my-applications`,
+        `${API_URL}/applications/my-applications`,
         {
           headers: { Authorization: `Bearer ${token}` },
           signal,

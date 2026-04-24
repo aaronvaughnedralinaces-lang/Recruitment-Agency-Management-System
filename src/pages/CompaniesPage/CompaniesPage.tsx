@@ -95,7 +95,7 @@ const CompaniesPage: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await axios.get(`${API_BASE}/api/public/companies`);
+      const response = await axios.get(`${API_BASE}/public/companies`);
       setCompanies(response.data);
       setFilteredCompanies(response.data);
     } catch (err) {
