@@ -159,7 +159,7 @@ export default function Dashboard() {
         const token = localStorage.getItem("token");
 
         try {
-            const response = await fetch(`${API_BASE_URL}/api/applications`, {
+            const response = await fetch(`${API_BASE_URL}/api/applications/apply`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,
