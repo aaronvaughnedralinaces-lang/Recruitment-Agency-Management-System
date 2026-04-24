@@ -98,7 +98,7 @@ export default function Profile() {
 
     const fetchProfile = async () => {
         try {
-            const res = await axios.get(`${API_URL}/api/users/profile`, getAuthHeaders());
+            const res = await axios.get(`${API_URL}/users/profile`, getAuthHeaders());
             setUser(res.data.user);
             setCareer(res.data.career);
             setEducation(res.data.education);
@@ -111,7 +111,7 @@ export default function Profile() {
 
     const updateBio = async () => {
         try {
-            await axios.put(`${API_URL}/api/users/profile/bio`, { bio: bioDraft }, getAuthHeaders());
+            await axios.put(`${API_URL}/users/profile/bio`, { bio: bioDraft }, getAuthHeaders());
             if (user) setUser({ ...user, bio: bioDraft });
             setEditingBio(false);
         } catch (err) {
@@ -144,9 +144,9 @@ export default function Profile() {
         const data = { ...careerForm, start_date: startFull, end_date: endFull };
         try {
             if (editingCareer) {
-                await axios.put(`${API_URL}/api/career/${editingCareer.id}`, data, getAuthHeaders());
+                await axios.put(`${API_URL}/career/${editingCareer.id}`, data, getAuthHeaders());
             } else {
-                await axios.post(`${API_URL}/api/career`, data, getAuthHeaders());
+                await axios.post(`${API_URL}/career`, data, getAuthHeaders());
             }
             fetchProfile();
             setShowCareerModal(false);
@@ -159,7 +159,7 @@ export default function Profile() {
     const deleteCareer = async (id: number) => {
         if (!window.confirm("Delete this career entry?")) return;
         try {
-            await axios.delete(`${API_URL}/api/career/${id}`, getAuthHeaders());
+            await axios.delete(`${API_URL}/career/${id}`, getAuthHeaders());
             fetchProfile();
         } catch (err) {
             console.error(err);
@@ -189,9 +189,9 @@ export default function Profile() {
         const data = { ...educationForm, completion_date: completionFull };
         try {
             if (editingEducation) {
-                await axios.put(`${API_URL}/api/education/${editingEducation.id}`, data, getAuthHeaders());
+                await axios.put(`${API_URL}/education/${editingEducation.id}`, data, getAuthHeaders());
             } else {
-                await axios.post(`${API_URL}/api/education`, data, getAuthHeaders());
+                await axios.post(`${API_URL}/education`, data, getAuthHeaders());
             }
             fetchProfile();
             setShowEducationModal(false);
@@ -204,7 +204,7 @@ export default function Profile() {
     const deleteEducation = async (id: number) => {
         if (!window.confirm("Delete this education entry?")) return;
         try {
-            await axios.delete(`${API_URL}/api/education/${id}`, getAuthHeaders());
+            await axios.delete(`${API_URL}/education/${id}`, getAuthHeaders());
             fetchProfile();
         } catch (err) {
             console.error(err);
