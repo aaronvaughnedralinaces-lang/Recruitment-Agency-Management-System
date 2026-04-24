@@ -593,12 +593,11 @@ export default function Dashboard() {
                             {/* Changed the button logic here to use your handleApply instead of navigate */}
                             <button
                                 type="button"
-                                onClick={handleApply}
-                                disabled={applying}
-                                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-violet-600 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-violet-600/20 transition hover:bg-violet-700 disabled:opacity-70 disabled:cursor-not-allowed"
+                                onClick={() => navigate(`/apply/${selectedJob.id}`)}
+                                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-violet-600 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-violet-600/20 transition hover:bg-violet-700"
                             >
-                                {applying ? "Applying..." : "Apply now"}
-                                {!applying && <ArrowRight size={16} />}
+                                Apply now
+                                <ArrowRight size={16} />
                             </button>
                         </div>
                     </div>
