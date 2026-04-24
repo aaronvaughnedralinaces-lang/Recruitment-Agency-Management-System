@@ -33,6 +33,7 @@ interface Job {
   company_logo: string | null;
 }
 
+// Preserved your explicit User interface
 interface User {
   id: number;
   name?: string;
@@ -112,6 +113,7 @@ const getJobTypeLabel = (type: Job["job_type"]) => {
   return labels[type];
 };
 
+// Preserved your robust display name logic
 const getDisplayName = (user: User | null): string => {
   if (!user) return "";
   if (user.name && user.name.trim()) return user.name;
@@ -178,6 +180,7 @@ export default function ApplyPage() {
     }
   }, [jobId, navigate]);
 
+  // Preserved hitting your public job route
   const fetchJobDetails = async (token: string, id: number) => {
     try {
       const response = await fetch(`/api/public/jobs/${id}`, {
@@ -256,6 +259,7 @@ export default function ApplyPage() {
       return;
     }
 
+    // Preserved your explicit, safe payload construction
     const payload = new FormData();
     payload.append("job_id", jobId || "");
     payload.append("name", formData.name);
@@ -269,7 +273,7 @@ export default function ApplyPage() {
     payload.append("start_date", formData.startDate);
     payload.append("skills", JSON.stringify(skills));
 
-    // Create document mapping to preserve document types
+    // Preserved your specific documentTypes array logic for the backend
     const documentTypes: string[] = [];
     (Object.keys(documents) as DocumentKey[]).forEach((field) => {
       if (documents[field]) {
@@ -278,7 +282,6 @@ export default function ApplyPage() {
       }
     });
     
-    // Send document types as JSON for server to match with files
     if (documentTypes.length > 0) {
       payload.append('documentTypes', JSON.stringify(documentTypes));
     }
@@ -318,7 +321,7 @@ export default function ApplyPage() {
   return (
     <UserPortalShell
       eyebrow={getDisplayName(user) ? `Applying as ${getDisplayName(user).split(" ")[0]}` : "Application form"}
-      title={job ? `Apply for ${job.title}` : "Complete your application"}
+      title={job ? `Apply for ${job.title} with a cleaner, guided form.` : "Complete your application"}
       description="Work through the form in a steady flow, upload required documents, and keep an eye on completion before submitting."
       stats={[
         { label: "Completion", value: `${completion}%` },
