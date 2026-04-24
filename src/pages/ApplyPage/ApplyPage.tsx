@@ -35,7 +35,9 @@ interface Job {
 
 interface User {
   id: number;
-  name: string;
+  name?: string;
+  first_name?: string | null;
+  last_name?: string | null;
   email: string;
   contact_number?: string;
 }
@@ -110,6 +112,14 @@ const getJobTypeLabel = (type: Job["job_type"]) => {
   return labels[type];
 };
 
+const getDisplayName = (user: User | null): string => {
+  if (!user) return "";
+  if (user.name && user.name.trim()) return user.name;
+  const first = user.first_name || "";
+  const last = user.last_name || "";
+  return `${first} ${last}`.trim() || "";
+};
+
 export default function ApplyPage() {
   const { jobId } = useParams<{ jobId: string }>();
   const navigate = useNavigate();
@@ -155,7 +165,7 @@ export default function ApplyPage() {
       setUser(parsedUser);
       setFormData((prev) => ({
         ...prev,
-        name: parsedUser.name || "",
+        name: getDisplayName(parsedUser),
         contactNumber: parsedUser.contact_number || "",
       }));
     }
@@ -225,6 +235,21 @@ export default function ApplyPage() {
     setSubmitting(true);
     setNotification(null);
 
+    // Validate required fields
+    if (!formData.name || !formData.age || !formData.contactNumber || !formData.address || 
+        !formData.previousJob || formData.yearsExperience === "" || !formData.highestEducation || 
+        !formData.startDate || formData.workedAbroad === null) {
+      setNotification({ type: "error", message: "Please fill in all required fields." });
+      setSubmitting(false);
+      return;
+    }
+
+    if (uploadedRequiredDocs < requiredDocs.length) {
+      setNotification({ type: "error", message: `Please upload all ${requiredDocs.length} required documents.` });
+      setSubmitting(false);
+      return;
+    }
+
     const token = localStorage.getItem("token");
     if (!token) {
       navigate("/auth");
@@ -233,12 +258,15 @@ export default function ApplyPage() {
 
     const payload = new FormData();
     payload.append("job_id", jobId || "");
-
-    Object.entries(formData).forEach(([key, value]) => {
-      const snakeKey = key.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
-      payload.append(snakeKey, value === null ? "" : String(value));
-    });
-
+    payload.append("name", formData.name);
+    payload.append("age", String(formData.age));
+    payload.append("contact_number", formData.contactNumber);
+    payload.append("address", formData.address);
+    payload.append("previous_job", formData.previousJob);
+    payload.append("years_experience", String(formData.yearsExperience));
+    payload.append("highest_education", formData.highestEducation);
+    payload.append("worked_abroad", formData.workedAbroad ? "1" : "0");
+    payload.append("start_date", formData.startDate);
     payload.append("skills", JSON.stringify(skills));
 
     // Create document mapping to preserve document types
@@ -289,7 +317,7 @@ export default function ApplyPage() {
 
   return (
     <UserPortalShell
-      eyebrow={user?.name ? `Applying as ${user.name.split(" ")[0]}` : "Application form"}
+      eyebrow={getDisplayName(user) ? `Applying as ${getDisplayName(user).split(" ")[0]}` : "Application form"}
       title={job ? `Apply for ${job.title}` : "Complete your application"}
       description="Work through the form in a steady flow, upload required documents, and keep an eye on completion before submitting."
       stats={[

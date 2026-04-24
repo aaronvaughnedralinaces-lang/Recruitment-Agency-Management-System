@@ -144,9 +144,9 @@ export default function Profile() {
         const data = { ...careerForm, start_date: startFull, end_date: endFull };
         try {
             if (editingCareer) {
-                await axios.put(`${API_URL}/career/${editingCareer.id}`, data, getAuthHeaders());
+                await axios.put(`${API_URL}/users/career/${editingCareer.id}`, data, getAuthHeaders());
             } else {
-                await axios.post(`${API_URL}/career`, data, getAuthHeaders());
+                await axios.post(`${API_URL}/users/career`, data, getAuthHeaders());
             }
             fetchProfile();
             setShowCareerModal(false);
@@ -159,7 +159,7 @@ export default function Profile() {
     const deleteCareer = async (id: number) => {
         if (!window.confirm("Delete this career entry?")) return;
         try {
-            await axios.delete(`${API_URL}/career/${id}`, getAuthHeaders());
+            await axios.delete(`${API_URL}/users/career/${id}`, getAuthHeaders());
             fetchProfile();
         } catch (err) {
             console.error(err);
@@ -189,9 +189,9 @@ export default function Profile() {
         const data = { ...educationForm, completion_date: completionFull };
         try {
             if (editingEducation) {
-                await axios.put(`${API_URL}/education/${editingEducation.id}`, data, getAuthHeaders());
+                await axios.put(`${API_URL}/users/education/${editingEducation.id}`, data, getAuthHeaders());
             } else {
-                await axios.post(`${API_URL}/education`, data, getAuthHeaders());
+                await axios.post(`${API_URL}/users/education`, data, getAuthHeaders());
             }
             fetchProfile();
             setShowEducationModal(false);
@@ -204,7 +204,7 @@ export default function Profile() {
     const deleteEducation = async (id: number) => {
         if (!window.confirm("Delete this education entry?")) return;
         try {
-            await axios.delete(`${API_URL}/education/${id}`, getAuthHeaders());
+            await axios.delete(`${API_URL}/users/education/${id}`, getAuthHeaders());
             fetchProfile();
         } catch (err) {
             console.error(err);
