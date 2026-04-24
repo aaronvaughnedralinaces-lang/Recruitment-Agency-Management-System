@@ -29,7 +29,7 @@ interface Company {
   created_at?: string;
 }
 
-const API_BASE = "http://localhost:5000/api";
+const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 const truncate = (value: string | null, fallback: string, max = 120) => {
   if (!value || !value.trim()) return fallback;
@@ -95,7 +95,7 @@ const CompaniesPage: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await axios.get(`${API_BASE}/companies`);
+      const response = await axios.get(`${API_BASE}/api/public/companies`);
       setCompanies(response.data);
       setFilteredCompanies(response.data);
     } catch (err) {

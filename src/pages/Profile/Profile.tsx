@@ -81,7 +81,7 @@ export default function Profile() {
 
     const fetchProfile = async () => {
         try {
-            const res = await axios.get(`${API_URL}/api/profile`, getAuthHeaders());
+            const res = await axios.get(`${API_URL}/api/users/profile`, getAuthHeaders());
             setUser(res.data.user);
             setCareer(res.data.career);
             setEducation(res.data.education);

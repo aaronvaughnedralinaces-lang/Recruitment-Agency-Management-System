@@ -124,3 +124,59 @@ exports.updateJob = async (req, res) => {
         res.status(500).json({ message: 'Server error' });
     }
 };
+
+// Public endpoints - no authentication required
+
+exports.getPublicJobs = async (req, res) => {
+    try {
+        const { limit = 12, sort = 'posted_date,desc', status = 'open' } = req.query;
+        
+        // Parse sort parameter (e.g., "posted_date,desc")
+        let [sortField, sortOrder] = sort.split(',');
+        sortOrder = sortOrder ? sortOrder.toUpperCase() : 'DESC';
+        const allowedFields = ['posted_date', 'title', 'salary_range', 'id'];
+        if (!allowedFields.includes(sortField)) sortField = 'posted_date';
+        if (!['ASC', 'DESC'].includes(sortOrder)) sortOrder = 'DESC';
+        
+        const jobs = await Job.getAllOpen({
+            limit: Math.min(parseInt(limit) || 12, 100),
+            sortField,
+            sortOrder,
+            status
+        });
+        res.json(jobs);
+    } catch (err) {
+        console.error('getPublicJobs error:', err);
+        res.status(500).json({ message: 'Error fetching jobs' });
+    }
+};
+
+exports.getPublicJobById = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const db = require('../config/database');
+        
+        const query = `
+            SELECT j.*, 
+                c.name AS company_name, 
+                c.logo AS company_logo
+            FROM jobs j
+            LEFT JOIN companies c ON j.company_id = c.id
+            WHERE j.id = ? AND j.status = 'open'
+        `;
+        
+        const [results] = await db.query(query, [id]);
+        
+        if (results.length === 0) {
+            return res.status(404).json({ message: 'Job not found' });
+        }
+        
+        const job = results[0];
+        job.tags = await Job.getTagsForJob(job.id);
+        
+        res.json(job);
+    } catch (err) {
+        console.error('getPublicJobById error:', err);
+        res.status(500).json({ message: 'Error fetching job details' });
+    }
+};

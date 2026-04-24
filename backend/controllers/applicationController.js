@@ -53,40 +53,55 @@ exports.submitApplication = async (req, res) => {
     try {
         const userId = req.user.id;
         const {
-            jobId,
+            job_id,
             name,
             age,
-            contactNumber,
+            contact_number,
             address,
-            previousJob,
-            yearsExperience,
+            previous_job,
+            years_experience,
             skills,
-            highestEducation,
-            workedAbroad,
-            startDate
+            highest_education,
+            worked_abroad,
+            start_date
         } = req.body;
+
+        // Validate required fields
+        if (!job_id || !name || !age || !contact_number || !address || !previous_job || years_experience === undefined || !highest_education || start_date === undefined) {
+            return res.status(400).json({ message: 'Missing required fields' });
+        }
+
+        // Parse skills if it's a JSON string
+        let parsedSkills = skills;
+        if (typeof skills === 'string') {
+            try {
+                parsedSkills = JSON.parse(skills);
+            } catch (e) {
+                parsedSkills = [];
+            }
+        }
 
         // Insert application
         const applicationQuery = `
             INSERT INTO applications 
             (job_id, user_id, name, age, contact_number, address, previous_job, 
-             years_experience, skills, highest_education, worked_abroad, start_date, status)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')
+             years_experience, skills, highest_education, worked_abroad, start_date, status, submitted_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', NOW(), NOW())
         `;
 
         const [result] = await db.query(applicationQuery, [
-            jobId,
+            job_id,
             userId,
             name,
             age,
-            contactNumber,
+            contact_number,
             address,
-            previousJob,
-            yearsExperience,
-            JSON.stringify(skills),
-            highestEducation,
-            workedAbroad ? 1 : 0,
-            startDate
+            previous_job,
+            years_experience,
+            JSON.stringify(parsedSkills),
+            highest_education,
+            worked_abroad ? 1 : 0,
+            start_date
         ]);
 
         const applicationId = result.insertId;
@@ -94,14 +109,27 @@ exports.submitApplication = async (req, res) => {
         // Handle file uploads
         if (req.files && req.files.length > 0) {
             const documentQuery = `
-                INSERT INTO documents (application_id, document_type, file_path, original_filename, mime_type)
-                VALUES (?, ?, ?, ?, ?)
+                INSERT INTO documents (application_id, document_type, file_path, original_filename, mime_type, uploaded_at)
+                VALUES (?, ?, ?, ?, ?, NOW())
             `;
 
-            for (const file of req.files) {
+            // Get document types mapping if provided
+            let documentTypes = [];
+            if (req.body.documentTypes) {
+                try {
+                    documentTypes = JSON.parse(req.body.documentTypes);
+                } catch (e) {
+                    console.warn('Failed to parse document types:', e);
+                }
+            }
+
+            for (let i = 0; i < req.files.length; i++) {
+                const file = req.files[i];
+                const documentType = documentTypes[i] || file.fieldname || 'document';
+                
                 await db.query(documentQuery, [
                     applicationId,
-                    file.fieldname,
+                    documentType,
                     file.path,
                     file.originalname,
                     file.mimetype
@@ -116,7 +144,7 @@ exports.submitApplication = async (req, res) => {
         });
     } catch (error) {
         console.error('Error submitting application:', error);
-        res.status(500).json({ message: 'Error submitting application' });
+        res.status(500).json({ message: 'Error submitting application: ' + error.message });
     }
 };
 

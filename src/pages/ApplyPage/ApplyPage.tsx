@@ -170,7 +170,7 @@ export default function ApplyPage() {
 
   const fetchJobDetails = async (token: string, id: number) => {
     try {
-      const response = await fetch(`/api/jobs/${id}`, {
+      const response = await fetch(`/api/public/jobs/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -241,11 +241,19 @@ export default function ApplyPage() {
 
     payload.append("skills", JSON.stringify(skills));
 
+    // Create document mapping to preserve document types
+    const documentTypes: string[] = [];
     (Object.keys(documents) as DocumentKey[]).forEach((field) => {
       if (documents[field]) {
-        payload.append(`documents[${field}]`, documents[field] as File);
+        payload.append('documents', documents[field] as File);
+        documentTypes.push(field);
       }
     });
+    
+    // Send document types as JSON for server to match with files
+    if (documentTypes.length > 0) {
+      payload.append('documentTypes', JSON.stringify(documentTypes));
+    }
 
     try {
       const response = await fetch("/api/applications/apply", {

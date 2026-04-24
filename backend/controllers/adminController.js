@@ -97,3 +97,26 @@ exports.updateDocumentStatus = async (req, res) => {
     }
 };
 
+// Public endpoint - get all verified companies for job seekers
+exports.getPublicCompanies = async (req, res) => {
+    try {
+        const companies = await Company.getAll();
+        // Return only verified companies with essential info
+        const publicCompanies = companies.map(c => ({
+            id: c.id,
+            name: c.name,
+            description: c.description,
+            location: c.location,
+            website: c.website,
+            contact_email: c.contact_email,
+            contact_phone: c.contact_phone,
+            logo: c.logo,
+            verified_status: c.verified_status
+        }));
+        res.json(publicCompanies);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
