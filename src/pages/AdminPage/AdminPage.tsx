@@ -54,7 +54,8 @@ interface ActivityLog {
     created_at: string;
 }
 
-// ==================== Main Component ====================
+// ==================== API Setup ====================
+// Preserved your dynamic API_BASE_URL logic for Railway
 let API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 if (API_BASE_URL.endsWith('/api')) {
     API_BASE_URL = API_BASE_URL.replace('/api', '');
@@ -63,6 +64,7 @@ if (API_BASE_URL.endsWith('/')) {
     API_BASE_URL = API_BASE_URL.slice(0, -1);
 }
 
+// ==================== Main Component ====================
 export default function AdminDashboard() {
     const navigate = useNavigate();
 
@@ -91,6 +93,8 @@ export default function AdminDashboard() {
     const [companyDocs, setCompanyDocs] = useState<any[]>([]);
     const [loadingDocs, setLoadingDocs] = useState(false);
     const [updatingDocId, setUpdatingDocId] = useState<number | null>(null);
+    const [docFetchError, setDocFetchError] = useState("");
+    const [, setDocRetryCount] = useState(0);
 
     const [togglingCompanyId, setTogglingCompanyId] = useState<number | null>(null);
 
@@ -206,17 +210,39 @@ export default function AdminDashboard() {
             setLoadingLogs(false);
         }
     };
-    const fetchCompanyDocuments = async (companyId: number) => {
+
+    const fetchCompanyDocuments = async (companyId: number, retryAttempt = 0) => {
         setLoadingDocs(true);
+        setDocFetchError("");
         try {
             const response = await fetch(`${API_BASE_URL}/api/admin/companies/${companyId}/documents`, {
                 headers: getAuthHeader(),
             });
-            if (!response.ok) throw new Error('Failed to fetch documents');
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(
+                    errorData.message ||
+                    `Failed to fetch documents (Status: ${response.status})`
+                );
+            }
             const data = await response.json();
             setCompanyDocs(data);
+            setDocRetryCount(0);
         } catch (err: any) {
-            alert(`Error: ${err.message}`);
+            const errorMessage = err.message || 'Failed to fetch documents';
+
+            // Auto-retry logic with exponential backoff
+            if (retryAttempt < 2) {
+                const retryDelay = Math.pow(2, retryAttempt) * 1000; // 1s, 2s, 4s
+                setTimeout(() => {
+                    setDocRetryCount(retryAttempt + 1);
+                    fetchCompanyDocuments(companyId, retryAttempt + 1);
+                }, retryDelay);
+            } else {
+                // Show error after all retries exhausted
+                setDocFetchError(errorMessage);
+                setDocRetryCount(0);
+            }
         } finally {
             setLoadingDocs(false);
         }
@@ -242,6 +268,14 @@ export default function AdminDashboard() {
             alert(`Error: ${err.message}`);
         } finally {
             setUpdatingDocId(null);
+        }
+    };
+
+    const handleDocumentRetry = () => {
+        if (selectedCompany) {
+            setDocRetryCount(0);
+            setDocFetchError("");
+            fetchCompanyDocuments(selectedCompany.id);
         }
     };
 
@@ -307,6 +341,17 @@ export default function AdminDashboard() {
             navigate("/employer/dashboard");
         }
     }, [user, isAdmin]);
+
+    // Keyboard accessibility: Close modal on Escape key
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape' && showDocsModal) {
+                setShowDocsModal(false);
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [showDocsModal]);
 
     // ========== Helper Functions ==========
     const getFullName = (firstName?: string, lastName?: string) => {
@@ -428,14 +473,12 @@ export default function AdminDashboard() {
                                             View Docs
                                         </button>
                                     </td>
-
                                 </tr>
                             ))}
                         </tbody>
                     </table>
                 </div>
             )}
-
         </div>
     );
 
@@ -748,64 +791,153 @@ export default function AdminDashboard() {
             </main>
             {showDocsModal && selectedCompany && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col">
-                        <div className="flex justify-between items-center p-4 border-b">
-                            <h3 className="text-lg font-bold">Documents for {selectedCompany.name}</h3>
-                            <button onClick={() => setShowDocsModal(false)} className="text-gray-500 hover:text-gray-700">
+                    <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden flex flex-col" role="dialog" aria-modal="true" aria-labelledby="docs-modal-title">
+                        {/* Header */}
+                        <div className="flex justify-between items-center p-6 border-b border-gray-100 bg-gray-50/50">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-lg bg-violet-100 flex items-center justify-center">
+                                    <svg className="w-6 h-6 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h3 id="docs-modal-title" className="text-xl font-bold text-gray-800">Company Documents</h3>
+                                    <p className="text-sm text-gray-500">{selectedCompany.name}</p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => setShowDocsModal(false)}
+                                className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-200 rounded-lg transition-colors"
+                                aria-label="Close documents modal"
+                            >
                                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                                 </svg>
                             </button>
                         </div>
-                        <div className="flex-1 overflow-auto p-4">
+
+                        {/* Content */}
+                        <div className="flex-1 overflow-y-auto p-6">
                             {loadingDocs ? (
-                                <p className="text-center text-gray-500">Loading documents...</p>
+                                <div className="space-y-3">
+                                    <div className="flex items-center gap-3">
+                                        <div className="flex-1">
+                                            <div className="h-4 bg-gray-200 rounded w-1/3 mb-2 animate-pulse"></div>
+                                            <div className="h-3 bg-gray-100 rounded w-1/2 animate-pulse"></div>
+                                        </div>
+                                        <div className="w-20 h-8 bg-gray-200 rounded animate-pulse"></div>
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        <div className="flex-1">
+                                            <div className="h-4 bg-gray-200 rounded w-2/5 mb-2 animate-pulse"></div>
+                                            <div className="h-3 bg-gray-100 rounded w-1/3 animate-pulse"></div>
+                                        </div>
+                                        <div className="w-20 h-8 bg-gray-200 rounded animate-pulse"></div>
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        <div className="flex-1">
+                                            <div className="h-4 bg-gray-200 rounded w-2/3 mb-2 animate-pulse"></div>
+                                            <div className="h-3 bg-gray-100 rounded w-2/5 animate-pulse"></div>
+                                        </div>
+                                        <div className="w-20 h-8 bg-gray-200 rounded animate-pulse"></div>
+                                    </div>
+                                </div>
+                            ) : docFetchError ? (
+                                <div className="flex flex-col items-center justify-center py-12">
+                                    <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center mb-4">
+                                        <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4v.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                    </div>
+                                    <h4 className="text-lg font-semibold text-gray-800 mb-2">Failed to Load Documents</h4>
+                                    <p className="text-sm text-gray-500 text-center mb-6 max-w-sm">{docFetchError}</p>
+                                    <button
+                                        onClick={handleDocumentRetry}
+                                        className="px-4 py-2 bg-violet-100 text-violet-700 hover:bg-violet-200 rounded-lg font-medium transition-colors"
+                                    >
+                                        Try Again
+                                    </button>
+                                </div>
                             ) : companyDocs.length === 0 ? (
-                                <p className="text-center text-gray-500">No documents uploaded by this company.</p>
+                                <div className="flex flex-col items-center justify-center py-12">
+                                    <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-4">
+                                        <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                        </svg>
+                                    </div>
+                                    <h4 className="text-lg font-semibold text-gray-800 mb-2">No Documents Found</h4>
+                                    <p className="text-sm text-gray-500 text-center max-w-sm">This company hasn't uploaded any documents for verification yet.</p>
+                                </div>
                             ) : (
-                                <ul className="space-y-3">
+                                <div className="space-y-3">
                                     {companyDocs.map(doc => (
-                                        <li key={doc.id} className="border rounded-lg p-3 flex flex-wrap justify-between items-center gap-2">
-                                            <div className="flex-1 min-w-0">
-                                                <p className="font-medium text-gray-800 capitalize">{doc.doc_type.replace(/_/g, ' ')}</p>
-                                                <a href={`http://localhost:5000${doc.file_url}`} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 hover:underline break-all">
-                                                    {doc.file_path.split('/').pop()}
-                                                </a>
-                                                <p className="text-xs text-gray-500 mt-1">Uploaded: {formatDateTime(doc.uploaded_at)}</p>
+                                        <div key={doc.id} className="border border-gray-200 rounded-xl p-4 hover:border-gray-300 hover:shadow-md transition-all bg-white">
+                                            <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="flex items-start gap-3">
+                                                        <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
+                                                            <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                                                            </svg>
+                                                        </div>
+                                                        <div className="flex-1 min-w-0">
+                                                            <p className="font-semibold text-gray-800 capitalize">{doc.doc_type.replace(/_/g, ' ')}</p>
+                                                            <a
+                                                                href={`${API_BASE_URL}${doc.file_url}`}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="text-sm text-violet-600 hover:underline break-all mt-1 inline-block"
+                                                            >
+                                                                {doc.file_path.split('/').pop()}
+                                                            </a>
+                                                            <p className="text-xs text-gray-500 mt-2">
+                                                                📅 Uploaded: {formatDateTime(doc.uploaded_at)}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 flex-shrink-0">
+                                                    <span className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap text-center ${
+                                                        doc.status === 'valid' ? 'bg-emerald-100 text-emerald-700' :
+                                                            doc.status === 'expired' ? 'bg-red-100 text-red-700' :
+                                                                'bg-amber-100 text-amber-700'
+                                                        }`}>
+                                                        {doc.status.charAt(0).toUpperCase() + doc.status.slice(1)}
+                                                    </span>
+                                                    {doc.status !== 'valid' && (
+                                                        <button
+                                                            onClick={() => updateDocumentStatus(doc.id, 'valid')}
+                                                            disabled={updatingDocId === doc.id}
+                                                            className="px-3 py-1.5 bg-emerald-100 text-emerald-700 hover:bg-emerald-200 rounded-lg text-xs font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                                                        >
+                                                            {updatingDocId === doc.id ? '...' : 'Verify'}
+                                                        </button>
+                                                    )}
+                                                    {doc.status !== 'expired' && (
+                                                        <button
+                                                            onClick={() => updateDocumentStatus(doc.id, 'expired')}
+                                                            disabled={updatingDocId === doc.id}
+                                                            className="px-3 py-1.5 bg-red-100 text-red-700 hover:bg-red-200 rounded-lg text-xs font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                                                        >
+                                                            {updatingDocId === doc.id ? '...' : 'Reject'}
+                                                        </button>
+                                                    )}
+                                                </div>
                                             </div>
-                                            <div className="flex items-center gap-2">
-                                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${doc.status === 'valid' ? 'bg-green-100 text-green-700' :
-                                                    doc.status === 'expired' ? 'bg-red-100 text-red-700' :
-                                                        'bg-yellow-100 text-yellow-700'
-                                                    }`}>
-                                                    {doc.status}
-                                                </span>
-                                                {doc.status !== 'valid' && (
-                                                    <button
-                                                        onClick={() => updateDocumentStatus(doc.id, 'valid')}
-                                                        disabled={updatingDocId === doc.id}
-                                                        className="px-2 py-1 bg-green-100 text-green-700 rounded text-xs hover:bg-green-200 disabled:opacity-50"
-                                                    >
-                                                        Verify
-                                                    </button>
-                                                )}
-                                                {doc.status !== 'expired' && (
-                                                    <button
-                                                        onClick={() => updateDocumentStatus(doc.id, 'expired')}
-                                                        disabled={updatingDocId === doc.id}
-                                                        className="px-2 py-1 bg-red-100 text-red-700 rounded text-xs hover:bg-red-200 disabled:opacity-50"
-                                                    >
-                                                        Reject
-                                                    </button>
-                                                )}
-                                            </div>
-                                        </li>
+                                        </div>
                                     ))}
-                                </ul>
+                                </div>
                             )}
                         </div>
-                        <div className="p-4 border-t flex justify-end">
-                            <button onClick={() => setShowDocsModal(false)} className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300">Close</button>
+
+                        {/* Footer */}
+                        <div className="p-6 border-t border-gray-100 bg-gray-50/50 flex justify-end">
+                            <button
+                                onClick={() => setShowDocsModal(false)}
+                                className="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-800 font-semibold rounded-lg transition-colors"
+                            >
+                                Close
+                            </button>
                         </div>
                     </div>
                 </div>
