@@ -21,6 +21,7 @@ interface JobPost {
     country_code?: string;
     state_code?: string;
     city?: string;
+    job_type?: string; // Added job_type to JobPost interface
 }
 interface CompanyDocument {
     id: number; doc_type: 'poea_license' | 'business_permit' | 'job_order'; file_url: string; status: 'pending' | 'valid' | 'expired';
@@ -136,12 +137,12 @@ export default function EmployerDashboard() {
     const [loading, setLoading] = useState({ init: true, jobs: false, saving: false, uploading: false });
     const [notification, setNotification] = useState<{ msg: string, type: 'success' | 'error' } | null>(null);
 
-    // Job Modal State 
+    // Job Modal State (ADDED job_type to default form state)
     const [isJobModalOpen, setIsJobModalOpen] = useState(false);
     const [editingJobId, setEditingJobId] = useState<number | null>(null);
     const [jobForm, setJobForm] = useState({
         title: "", description: "", salary_range: "", location: "", tags: [] as string[],
-        country_code: "", state_code: "", city: ""
+        country_code: "", state_code: "", city: "", job_type: "full-time"
     });
     const [tagInput, setTagInput] = useState("");
 
@@ -217,7 +218,7 @@ export default function EmployerDashboard() {
         return res.json();
     };
 
-    // ========== API Logic (Preserved your robust error handling) ==========
+    // ========== API Logic ==========
     const apiCall = useCallback(async (endpoint: string, options: RequestInit = {}) => {
         const token = localStorage.getItem("token");
         const baseUrl = API_URL.endsWith('/') ? API_URL.slice(0, -1) : API_URL;
@@ -321,6 +322,7 @@ export default function EmployerDashboard() {
         setCities([]);
     };
 
+    // ADDED job_type to the open modal populator
     const openJobModal = async (job?: JobPost) => {
         if (job) {
             setEditingJobId(job.id);
@@ -329,7 +331,8 @@ export default function EmployerDashboard() {
                 salary_range: job.salary_range, location: job.location, tags: job.tags || [],
                 country_code: job.country_code || "",
                 state_code: job.state_code || "",
-                city: job.city || ""
+                city: job.city || "",
+                job_type: job.job_type || "full-time" 
             });
             if (job.country_code) {
                 setSelectedCountry({ code: job.country_code, name: '' });
@@ -349,7 +352,7 @@ export default function EmployerDashboard() {
             setEditingJobId(null);
             setJobForm({
                 title: "", description: "", salary_range: "", location: "", tags: [],
-                country_code: "", state_code: "", city: ""
+                country_code: "", state_code: "", city: "", job_type: "full-time"
             });
             resetCascade();
         }
@@ -409,6 +412,7 @@ export default function EmployerDashboard() {
         setJobForm(prev => ({ ...prev, tags: prev.tags.filter((_, i) => i !== index) }));
     };
 
+    // ADDED job_type and status="open" to the payload
     const handleJobSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!jobForm.location.trim()) {
@@ -427,7 +431,9 @@ export default function EmployerDashboard() {
                 tags: jobForm.tags,
                 country_code: jobForm.country_code,
                 state_code: jobForm.state_code,
-                city: jobForm.city
+                city: jobForm.city,
+                job_type: jobForm.job_type, 
+                status: "open"              
             };
             const savedJob = await apiCall(endpoint, {
                 method, body: JSON.stringify(payload)
@@ -983,6 +989,22 @@ export default function EmployerDashboard() {
                                 />
                             </div>
                             
+                            {/* ADDED JOB TYPE DROPDOWN HERE */}
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 mb-1.5">Job Type</label>
+                                <select
+                                    required
+                                    value={jobForm.job_type}
+                                    onChange={e => setJobForm({ ...jobForm, job_type: e.target.value })}
+                                    className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white"
+                                >
+                                    <option value="full-time">Full Time</option>
+                                    <option value="part-time">Part Time</option>
+                                    <option value="contract">Contract</option>
+                                    <option value="internship">Internship</option>
+                                </select>
+                            </div>
+
                             {/* PRESERVED YOUR LOCATION CASCADE */}
                             <div>
                                 <label className="block text-sm font-medium text-slate-700 mb-1.5">Location</label>
