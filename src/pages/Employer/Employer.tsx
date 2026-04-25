@@ -169,7 +169,8 @@ export default function EmployerDashboard() {
         setSelectedApplicant(null);
         try {
             const response = await apiCall(`/api/jobs/${job.id}/applications`);
-            const applicants = response?.data || [];
+            // This safely handles both raw arrays and nested data objects!
+            const applicants = Array.isArray(response) ? response : (response?.data || []);
             setCurrentApplicants(applicants);
             setSelectedApplicant(applicants[0] || null);
         } catch (err: any) {

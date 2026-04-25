@@ -229,3 +229,48 @@ exports.deleteApplication = async (req, res) => {
         res.status(500).json({ message: 'Error deleting application' });
     }
 };
+
+
+// Get all applications for a specific job (For the Employer)
+exports.getJobApplications = async (req, res) => {
+    try {
+        const jobId = req.params.id; // Gets the ID from the URL
+
+        // Prevent JSON from getting cut off
+        const db = require('../config/database');
+        await db.query('SET SESSION group_concat_max_len = 1000000;');
+
+        const query = `
+            SELECT a.*,
+            GROUP_CONCAT(
+                JSON_OBJECT(
+                    'id', d.id,
+                    'application_id', d.application_id,
+                    'document_type', d.document_type,
+                    'file_path', d.file_path,
+                    'original_filename', d.original_filename,
+                    'mime_type', d.mime_type,
+                    'uploaded_at', d.uploaded_at
+                )
+            ) as documents
+            FROM applications a
+            LEFT JOIN documents d ON a.id = d.application_id
+            WHERE a.job_id = ?
+            GROUP BY a.id
+            ORDER BY a.submitted_at DESC
+        `;
+        
+        const [applications] = await db.query(query, [jobId]);
+        
+        // Safely parse the documents JSON string
+        const parsed = applications.map(app => ({
+            ...app,
+            documents: app.documents ? JSON.parse(`[${app.documents}]`) : []
+        }));
+        
+        res.json(parsed);
+    } catch (error) {
+        console.error('Error fetching job applications:', error);
+        res.status(500).json({ message: 'Error fetching applications' });
+    }
+};
