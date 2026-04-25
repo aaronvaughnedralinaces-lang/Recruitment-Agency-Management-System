@@ -64,6 +64,49 @@ if (API_BASE_URL.endsWith('/')) {
     API_BASE_URL = API_BASE_URL.slice(0, -1);
 }
 
+// ==================== Helper Functions ====================
+// FIX: Smart Logo URL Generator
+const getLogoUrl = (logoPath: string) => {
+    if (!logoPath) return '';
+    if (logoPath.startsWith('data:') || /^https?:\/\//i.test(logoPath)) {
+        return logoPath;
+    }
+    
+    let baseUrl = API_BASE_URL;
+    if (baseUrl.endsWith('/api')) baseUrl = baseUrl.replace('/api', '');
+    if (baseUrl.endsWith('/')) baseUrl = baseUrl.slice(0, -1);
+
+    let cleanPath = logoPath.replace(/\\/g, "/");
+    if (cleanPath.includes('uploads/')) {
+        cleanPath = cleanPath.substring(cleanPath.indexOf('uploads/'));
+    } else {
+        cleanPath = cleanPath.replace(/^\/+/, "");
+    }
+    
+    return `${baseUrl}/${cleanPath}`;
+};
+
+// FIX: Smart Document URL Generator
+const getDocumentUrl = (doc: any) => {
+    let baseUrl = API_BASE_URL;
+    if (baseUrl.endsWith('/api')) baseUrl = baseUrl.replace('/api', '');
+    if (baseUrl.endsWith('/')) baseUrl = baseUrl.slice(0, -1);
+
+    const rawPath = doc.file_path || doc.file_url || "";
+    const normalizedPath = rawPath.replace(/\\/g, "/");
+    
+    if (/^https?:\/\//i.test(normalizedPath)) return normalizedPath;
+
+    let cleanPath = normalizedPath;
+    if (cleanPath.includes('uploads/')) {
+        cleanPath = cleanPath.substring(cleanPath.indexOf('uploads/'));
+    } else {
+        cleanPath = cleanPath.replace(/^\/+/, "");
+    }
+
+    return `${baseUrl}/${cleanPath}`;
+};
+
 // ==================== Main Component ====================
 export default function AdminDashboard() {
     const navigate = useNavigate();
@@ -423,7 +466,7 @@ export default function AdminDashboard() {
                                     <td className="px-6 py-3 font-medium text-gray-800">
                                         <div className="flex items-center gap-2">
                                             {company.logo ? (
-                                                <img src={company.logo} alt={company.name} className="w-6 h-6 rounded object-cover" />
+                                                <img src={getLogoUrl(company.logo)} alt={company.name} className="w-6 h-6 rounded object-cover" />
                                             ) : (
                                                 <div className="w-6 h-6 rounded bg-violet-100 text-violet-600 flex items-center justify-center text-xs font-bold">
                                                     {company.name.charAt(0)}
@@ -883,7 +926,7 @@ export default function AdminDashboard() {
                                                         <div className="flex-1 min-w-0">
                                                             <p className="font-semibold text-gray-800 capitalize">{doc.doc_type.replace(/_/g, ' ')}</p>
                                                             <a
-                                                                href={`${API_BASE_URL}${doc.file_url}`}
+                                                                href={getDocumentUrl(doc)}
                                                                 target="_blank"
                                                                 rel="noopener noreferrer"
                                                                 className="text-sm text-violet-600 hover:underline break-all mt-1 inline-block"
