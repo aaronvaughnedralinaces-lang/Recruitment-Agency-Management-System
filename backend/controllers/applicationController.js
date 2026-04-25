@@ -6,6 +6,10 @@ const fs = require('fs');
 exports.getMyApplications = async (req, res) => {
     try {
         const userId = req.user.id;
+
+        // FIX: Increase the GROUP_CONCAT limit so the JSON string doesn't get cut off!
+        await db.query('SET SESSION group_concat_max_len = 1000000;');
+
         const query = `
             SELECT 
                 a.*,
