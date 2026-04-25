@@ -210,11 +210,30 @@ const formatDocumentType = (type: string) => (
   documentTypeLabels[type] || type.replace(/([A-Z])/g, " $1").trim()
 );
 
+// FIX: Improved File URL generator to strip absolute paths and accidental /api prefixes
 const getFileUrl = (filePath: string) => {
+  // 1. Get a clean base URL (stripping out any accidental /api)
+  let baseUrl = API_URL;
+  if (baseUrl.endsWith('/api')) {
+      baseUrl = baseUrl.replace('/api', '');
+  }
+  if (baseUrl.endsWith('/')) {
+      baseUrl = baseUrl.slice(0, -1);
+  }
+
   const normalizedPath = filePath.replace(/\\/g, "/");
   if (/^https?:\/\//i.test(normalizedPath)) return normalizedPath;
-  const cleanPath = normalizedPath.replace(/^\/+/, "");
-  return `${API_URL}/${cleanPath}`;
+
+  // 2. Extract ONLY the 'uploads/...' part, ignoring Railway's absolute container paths
+  let cleanPath = normalizedPath;
+  if (cleanPath.includes('uploads/')) {
+      cleanPath = cleanPath.substring(cleanPath.indexOf('uploads/'));
+  } else {
+      cleanPath = cleanPath.replace(/^\/+/, "");
+  }
+
+  // 3. Return the perfect URL
+  return `${baseUrl}/${cleanPath}`;
 };
 
 const getStoredUser = (): UserProfile | null => {
