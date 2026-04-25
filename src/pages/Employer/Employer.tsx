@@ -21,7 +21,7 @@ interface JobPost {
     country_code?: string;
     state_code?: string;
     city?: string;
-    job_type?: string; // Added job_type to JobPost interface
+    job_type?: string; 
 }
 interface CompanyDocument {
     id: number; doc_type: 'poea_license' | 'business_permit' | 'job_order'; file_url: string; status: 'pending' | 'valid' | 'expired';
@@ -72,22 +72,49 @@ if (API_URL.endsWith('/')) {
 const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
 };
+
+// FIX: Smart Logo URL Generator
 const getLogoUrl = (logoPath: string) => {
     if (!logoPath) return '';
-    if (logoPath.startsWith('data:') || logoPath.startsWith('http://') || logoPath.startsWith('https://')) {
+    if (logoPath.startsWith('data:') || /^https?:\/\//i.test(logoPath)) {
         return logoPath;
     }
-    return `${API_URL}/${logoPath.replace(/^\/+/, '')}`;
+    
+    let baseUrl = API_URL;
+    if (baseUrl.endsWith('/api')) baseUrl = baseUrl.replace('/api', '');
+    if (baseUrl.endsWith('/')) baseUrl = baseUrl.slice(0, -1);
+
+    let cleanPath = logoPath.replace(/\\/g, "/");
+    if (cleanPath.includes('uploads/')) {
+        cleanPath = cleanPath.substring(cleanPath.indexOf('uploads/'));
+    } else {
+        cleanPath = cleanPath.replace(/^\/+/, "");
+    }
+    
+    return `${baseUrl}/${cleanPath}`;
 };
+
+// FIX: Smart Document URL Generator (Same as MyApplications.tsx)
 const getDocumentUrl = (doc: ApplicationDocument) => {
-    if (doc.file_url) {
-        return doc.file_url.startsWith('http') ? doc.file_url : `${API_URL}${doc.file_url}`;
+    let baseUrl = API_URL;
+    if (baseUrl.endsWith('/api')) baseUrl = baseUrl.replace('/api', '');
+    if (baseUrl.endsWith('/')) baseUrl = baseUrl.slice(0, -1);
+
+    const rawPath = doc.file_path || doc.file_url || "";
+    const normalizedPath = rawPath.replace(/\\/g, "/");
+    
+    if (/^https?:\/\//i.test(normalizedPath)) return normalizedPath;
+
+    let cleanPath = normalizedPath;
+    if (cleanPath.includes('uploads/')) {
+        cleanPath = cleanPath.substring(cleanPath.indexOf('uploads/'));
+    } else {
+        cleanPath = cleanPath.replace(/^\/+/, "");
     }
-    if (doc.file_path) {
-        return `${API_URL}/${doc.file_path.replace(/^\/+/, '').replace(/\\/g, '/')}`;
-    }
-    return '#';
+
+    return `${baseUrl}/${cleanPath}`;
 };
+
 const formatApplicantStatus = (status: JobApplication['status']) => ({
     label: status === 'pending' ? 'Pending review' : status.charAt(0).toUpperCase() + status.slice(1),
     className: status === 'hired'
@@ -100,6 +127,7 @@ const formatApplicantStatus = (status: JobApplication['status']) => ({
                     ? 'bg-sky-100 text-sky-800'
                     : 'bg-amber-100 text-amber-800'
 });
+
 const formatDocumentType = (type: string) => {
     const labelMap: Record<string, string> = {
         passport: 'Passport',
@@ -137,7 +165,7 @@ export default function EmployerDashboard() {
     const [loading, setLoading] = useState({ init: true, jobs: false, saving: false, uploading: false });
     const [notification, setNotification] = useState<{ msg: string, type: 'success' | 'error' } | null>(null);
 
-    // Job Modal State (ADDED job_type to default form state)
+    // Job Modal State
     const [isJobModalOpen, setIsJobModalOpen] = useState(false);
     const [editingJobId, setEditingJobId] = useState<number | null>(null);
     const [jobForm, setJobForm] = useState({
@@ -169,8 +197,7 @@ export default function EmployerDashboard() {
         setSelectedApplicant(null);
         try {
             const response = await apiCall(`/api/jobs/${job.id}/applications`);
-            // This safely handles both raw arrays and nested data objects!
-            const applicants = Array.isArray(response) ? response : (response?.data || []);
+            const applicants = response?.data || response || [];
             setCurrentApplicants(applicants);
             setSelectedApplicant(applicants[0] || null);
         } catch (err: any) {
@@ -323,7 +350,6 @@ export default function EmployerDashboard() {
         setCities([]);
     };
 
-    // ADDED job_type to the open modal populator
     const openJobModal = async (job?: JobPost) => {
         if (job) {
             setEditingJobId(job.id);
@@ -413,7 +439,6 @@ export default function EmployerDashboard() {
         setJobForm(prev => ({ ...prev, tags: prev.tags.filter((_, i) => i !== index) }));
     };
 
-    // ADDED job_type and status="open" to the payload
     const handleJobSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!jobForm.location.trim()) {
@@ -965,7 +990,7 @@ export default function EmployerDashboard() {
                 )}
             </main>
 
-            {/* Job Modal (redesigned with YOUR location cascade) */}
+            {/* Job Modal */}
             {isJobModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30 backdrop-blur-sm">
                     <div className="bg-white w-full max-w-2xl rounded-xl shadow-xl flex flex-col max-h-[90vh]">
@@ -990,7 +1015,6 @@ export default function EmployerDashboard() {
                                 />
                             </div>
                             
-                            {/* ADDED JOB TYPE DROPDOWN HERE */}
                             <div>
                                 <label className="block text-sm font-medium text-slate-700 mb-1.5">Job Type</label>
                                 <select
@@ -1006,7 +1030,6 @@ export default function EmployerDashboard() {
                                 </select>
                             </div>
 
-                            {/* PRESERVED YOUR LOCATION CASCADE */}
                             <div>
                                 <label className="block text-sm font-medium text-slate-700 mb-1.5">Location</label>
                                 <div className="grid grid-cols-3 gap-3">
@@ -1099,7 +1122,7 @@ export default function EmployerDashboard() {
                 </div>
             )}
 
-            {/* Applicants Modal (redesigned) */}
+            {/* Applicants Modal */}
             {isApplicantsModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30 backdrop-blur-sm">
                     <div className="bg-white w-full max-w-6xl rounded-2xl shadow-xl flex flex-col max-h-[92vh] overflow-hidden">
