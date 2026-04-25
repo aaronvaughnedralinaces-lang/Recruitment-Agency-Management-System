@@ -52,54 +52,61 @@ const Job = {
     },
 
     // ========== CRUD Methods ==========
+    
+    // FIX 1: Add the COUNT() query here to get applicant numbers
     findByCompanyId: async (companyId) => {
-        const [jobs] = await db.query(
-            'SELECT * FROM jobs WHERE company_id = ? ORDER BY posted_date DESC',
-            [companyId]
-        );
+        const query = `
+            SELECT j.*, COUNT(a.id) as applicant_count 
+            FROM jobs j 
+            LEFT JOIN applications a ON j.id = a.job_id 
+            WHERE j.company_id = ? 
+            GROUP BY j.id 
+            ORDER BY j.posted_date DESC
+        `;
+        const [jobs] = await db.query(query, [companyId]);
         for (let job of jobs) {
             job.tags = await Job.getTagsForJob(job.id);
         }
         return jobs;
     },
 
+    // FIX 2: Add job_type to the INSERT statement
     create: async (jobData, tagNames = []) => {
-        const { company_id, title, description, location, salary_range, status, created_by } = jobData;
+        const { company_id, title, description, location, salary_range, status, created_by, job_type } = jobData;
         const posted_date = new Date().toISOString().slice(0, 19).replace('T', ' ');
         const [result] = await db.query(
-            `INSERT INTO jobs (company_id, title, description, location, salary_range, posted_date, status, created_by) 
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-            [company_id, title, description, location, salary_range, posted_date, status, created_by]
+            `INSERT INTO jobs (company_id, title, description, location, salary_range, posted_date, status, created_by, job_type) 
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [company_id, title, description, location, salary_range, posted_date, status, created_by, job_type || 'full-time']
         );
         const newJobId = result.insertId;
         if (tagNames.length) {
             await Job._setJobTags(newJobId, tagNames);
         }
         
-        // FIX IS HERE 👇
         const [rows] = await db.query('SELECT * FROM jobs WHERE id = ?', [newJobId]);
-        const newJob = rows[0]; // Extract the single job object from the rows array
+        const newJob = rows[0]; 
         newJob.tags = await Job.getTagsForJob(newJobId);
         
         return newJob;
     },
 
+    // FIX 3: Add job_type to the UPDATE statement
     update: async (id, companyId, updateData, tagNames = null) => {
-        const { title, description, location, salary_range } = updateData;
+        const { title, description, location, salary_range, job_type } = updateData;
         const [result] = await db.query(
             `UPDATE jobs 
-             SET title = ?, description = ?, location = ?, salary_range = ?
+             SET title = ?, description = ?, location = ?, salary_range = ?, job_type = ?
              WHERE id = ? AND company_id = ?`,
-            [title, description, location, salary_range, id, companyId]
+            [title, description, location, salary_range, job_type || 'full-time', id, companyId]
         );
         if (result.affectedRows === 0) return null;
         if (tagNames !== null) {
             await Job._setJobTags(id, tagNames);
         }
         
-        // FIX IS HERE 👇
         const [rows] = await db.query('SELECT * FROM jobs WHERE id = ?', [id]);
-        const updatedJob = rows[0]; // Extract the single job object from the rows array
+        const updatedJob = rows[0]; 
         updatedJob.tags = await Job.getTagsForJob(id);
         
         return updatedJob;
@@ -109,8 +116,8 @@ const Job = {
         const [result] = await db.query('DELETE FROM jobs WHERE id = ? AND company_id = ?', [id, companyId]);
         return result.affectedRows;
     },
-    // models/Job.js – add this function inside the Job object
-        getAllOpen: async ({ limit, sortField, sortOrder, status }) => {
+    
+    getAllOpen: async ({ limit, sortField, sortOrder, status }) => {
         try {
             const query = `
                 SELECT j.*, 
@@ -133,6 +140,7 @@ const Job = {
             throw err;
         }
     },
+    
     getAll: async () => {
         const [rows] = await db.query(`
             SELECT j.*, c.name as company_name
@@ -146,6 +154,5 @@ const Job = {
         return rows;
     }
 };
-
 
 module.exports = Job;
